@@ -1,4 +1,4 @@
-cicd-demo {
+pipeline {
     def app
 
     stage('Clone repository') {
