@@ -1,36 +1,41 @@
 pipeline {
-    def app
-
-    stage('Clone repository') {
-        /* Let's make sure we have the repository cloned to our workspace */
-
-        checkout scm
+  environment {
+    registry = "interviewdot/cicd-demo"
+    registryCredential = 'docker-hub-credentials'
+    dockerImage = ''
+  }
+  agent any
+  stages {
+    stage('Cloning Git') {
+      steps {
+        git 'https://github.com/net-vinothkumar/devops-cicd-demo.git'
+      }
     }
-
-    stage('Build image') {
-        /* This builds the actual image; synonymous to
-         * docker build on the command line */
-
-        app = docker.build("interviewdot/cicd-demo")
-    }
-
-    stage('Test image') {
-        /* Ideally, we would run a test framework against our image.
-         */
-
-        app.inside {
-            sh 'echo "Tests passed"'
+    stage('Building image') {
+      steps{
+        script {
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
+      }
     }
-
-    stage('Push image') {
-        /* Finally, we'll push the image with two tags:
-         * First, the incremental build number from Jenkins
-         * Second, the 'latest' tag.
-         * Pushing multiple tags is cheap, as all the layers are reused. */
-        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
+    stage('Push Image') {
+      steps{
+        script {
+          /* Finally, we'll push the image with two tags:
+                   * First, the incremental build number from Jenkins
+                   * Second, the 'latest' tag.
+                   * Pushing multiple tags is cheap, as all the layers are reused. */
+          docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+              app.push("${env.BUILD_NUMBER}")
+              app.push("latest")
+          }
         }
+      }
     }
+    stage('Remove Unused docker image') {
+      steps{
+        sh "docker rmi $registry:$BUILD_NUMBER"
+      }
+    }
+  }
 }
