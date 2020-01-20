@@ -4,7 +4,12 @@ pipeline {
     registryCredential = 'docker-hub-credentials'
     dockerImage = ''
   }
-  agent any
+  agent {
+          docker {
+              image 'maven:3-alpine'
+              args '-v /root/.m2:/root/.m2'
+          }
+      }
   stages {
     stage('Cloning Git') {
       steps {
@@ -14,6 +19,7 @@ pipeline {
     stage('Building image') {
       steps{
         script {
+          sh 'mvn -B -DskipTests clean package'
           dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
       }
