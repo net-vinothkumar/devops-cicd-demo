@@ -14,7 +14,6 @@ pipeline {
     stage('Building image') {
       steps{
         script {
-          sh 'mvn -B -DskipTests clean package'
           dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
       }
